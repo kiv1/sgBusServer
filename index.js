@@ -134,7 +134,7 @@ app.get("/api/getBus", async (req, res, next) => {
     res.send(await getBus(code))
 });
 
-expressApp.get('/', (req, res) => {
+app.get('/', (req, res) => {
     try{
       console.log('I am alive!')
       res.send('I am alive!');
