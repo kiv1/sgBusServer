@@ -133,3 +133,13 @@ app.get("/api/getBus", async (req, res, next) => {
     var code = req.param('code')
     res.send(await getBus(code))
 });
+
+expressApp.get('/', (req, res) => {
+    try{
+      console.log('I am alive!')
+      res.send('I am alive!');
+    }catch(err){
+      console.log(err)
+      res.send(err);
+    }
+  });
