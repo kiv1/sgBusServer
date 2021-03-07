@@ -90,28 +90,13 @@ async function getAllStopNearby(sentLat, sentLng){
             lng: value.lng
         }
         if (arePointsNear(checkedPoint, centerPoint, 0.5)) { 
-            let temp = null
-            let busServices = await getBus(key)
-            busServices.sort(function (a, b) {
-                return a.ServiceNo - b.ServiceNo
-            })
-            if (busServices.length == 0){
-                temp = {
-                    code: key,
-                    lat: value.lat,
-                    lng: value.lng,
-                    name: value.name,
-                    busServices:[]
-                }
-            }else{
-                temp = {
-                    code: key,
-                    lat: value.lat,
-                    lng: value.lng,
-                    name: value.name,
-                    busServices:busServices,
-                }
-            }
+            temp = {
+                code: key,
+                lat: value.lat,
+                lng: value.lng,
+                name: value.name,
+                busServices:busServices,
+            }           
             output.push(temp);
         }
     })
