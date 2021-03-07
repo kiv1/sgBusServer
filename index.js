@@ -95,7 +95,6 @@ async function getAllStopNearby(sentLat, sentLng){
                 lat: value.lat,
                 lng: value.lng,
                 name: value.name,
-                busServices:busServices,
             }           
             output.push(temp);
         }
