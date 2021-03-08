@@ -138,6 +138,7 @@ app.get("/api/getNearby", async (req, res, next) => {
     busStops.sort(function (a, b) {
       return a.distacne - b.distacne
     })
+    busStops.reverse();
     res.send(busStops)
 });
 
