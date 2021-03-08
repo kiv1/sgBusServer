@@ -20,6 +20,28 @@ function arePointsNear(checkPoint, centerPoint, km) {
     return Math.sqrt(dx * dx + dy * dy) <= km
 }
 
+function distance(lat1, lon1, lat2, lon2, unit) {
+	if ((lat1 == lat2) && (lon1 == lon2)) {
+		return 0;
+	}
+	else {
+		var radlat1 = Math.PI * lat1/180;
+		var radlat2 = Math.PI * lat2/180;
+		var theta = lon1-lon2;
+		var radtheta = Math.PI * theta/180;
+		var dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+		if (dist > 1) {
+			dist = 1;
+		}
+		dist = Math.acos(dist);
+		dist = dist * 180/Math.PI;
+		dist = dist * 60 * 1.1515;
+		if (unit=="K") { dist = dist * 1.609344 }
+		if (unit=="N") { dist = dist * 0.8684 }
+		return dist;
+	}
+}
+
 async function getBus(text) {
     return new Promise(function (resolve, reject) {
       var url =
@@ -90,11 +112,13 @@ async function getAllStopNearby(sentLat, sentLng){
             lng: value.lng
         }
         if (arePointsNear(checkedPoint, centerPoint, 0.5)) { 
+            let d = distance(checkedPoint.lat, checkedPoint.lng, centerPoint.lat, centerPoint.lng, 'K')
             temp = {
                 code: key,
                 lat: value.lat,
                 lng: value.lng,
                 name: value.name,
+                distance: d,
             }           
             output.push(temp);
         }
@@ -110,12 +134,21 @@ app.listen(PORT, () => {
 app.get("/api/getNearby", async (req, res, next) => {
     var lat = req.param('lat')
     var lng = req.param('lng')
-    res.send(await getAllStopNearby(lat, lng))
+    let busStops = await getAllStopNearby(lat, lng)
+    busStops.sort(function (a, b) {
+      return a.distacne - b.distacne
+    })
+    res.send(busStops)
 });
 
 app.get("/api/getBus", async (req, res, next) => {
     var code = req.param('code')
-    res.send(await getBus(code))
+    let busServices = await getBus(code)
+
+    busServices.sort(function (a, b) {
+      return a.ServiceNo - b.ServiceNo
+    })
+    res.send(busServices)
 });
 
 app.get('/', (req, res) => {
