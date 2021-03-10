@@ -218,8 +218,11 @@ app.get("/api/getBusRoute", async (req, res, next) => {
       if (currentCheckStop == null){
         break;
       }
-      let tempD = distance(currentCheckStop.lat, currentCheckStop.lng, busLocations.NextBus.Latitude, busLocations.NextBus.Longitude, "K")
+      let tempD = distance(currentCheckStop.lat, currentCheckStop.lng, pointStop.lat, pointStop.lng, "K")
+
       if(tempD<d){
+        console.log(d)
+        console.log(tempD)
         route.push(currentCheckStop)
       }
       if(currentCheckStop.code == code){
