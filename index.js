@@ -115,14 +115,24 @@ function getAllBusRoute() {
 }
 
 function checkBusStopArray(busRoutes, code) {
+  var index = 0;
   for(let i = 0; i<busRoutes.length; i++){
     let oneRoute = busRoutes[i];
-    for(let x = 0; i<oneRoute.length-1; x++){
-      if(currentCheckStop.code == code){
-        return i;
+    let toBreak = false;
+    for(let x = 0; i<oneRoute.length; x++){
+      if (oneRoute[x] == null){
+        break;
+      }
+      if(oneRoute[x] == code){
+        break;
       }
     }
+    if(toBreak){
+      index = i;
+      break;
+    }
   }
+  return index;
 }
 
 async function asyncForEach(array, callback) {
@@ -226,6 +236,7 @@ app.get("/api/getBusRoute", async (req, res, next) => {
   let fixedMins = Math.round((((new Date(busLocations.NextBus.EstimatedArrival) - localTime) % 86400000) % 3600000) / 60000);
 
   let i = checkBusStopArray(busRoutes, code);
+  console.log(i)
   let oneRoute = busRoutes[i];
   let toBreak = false;
   route = [];
