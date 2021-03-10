@@ -248,10 +248,6 @@ app.get("/api/getBusRoute", async (req, res, next) => {
       break;
     }
   }
-  if(toBreak){
-    break;
-  }
-  
 
   let returnObj = {
     currentCode: pointStop,
