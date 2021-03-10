@@ -114,6 +114,17 @@ function getAllBusRoute() {
   })
 }
 
+function checkBusStopArray(busRoutes, code) {
+  for(let i = 0; i<busRoutes.length; i++){
+    let oneRoute = busRoutes[i];
+    for(let x = 0; i<oneRoute.length-1; x++){
+      if(currentCheckStop.code == code){
+        return i;
+      }
+    }
+  }
+}
+
 async function asyncForEach(array, callback) {
     for (let key in array) {
       await callback(array[key], key, array);
@@ -214,33 +225,33 @@ app.get("/api/getBusRoute", async (req, res, next) => {
   let localTime = nd.getTime();
   let fixedMins = Math.round((((new Date(busLocations.NextBus.EstimatedArrival) - localTime) % 86400000) % 3600000) / 60000);
 
-  for(let i = 0; i<busRoutes.length; i++){
-    let oneRoute = busRoutes[i];
-    let toBreak = false;
-    route = [];
-    for(let x = 0; i<oneRoute.length-1; x++){
-      let currentCheckStop = await getOneBusStop(oneRoute[x]);
-      if (currentCheckStop == null){
-        break;
-      }
-      let nextB = await getBusFromStop(currentCheckStop.code, bus)
-      let timeOfNextBus = new Date(nextB.NextBus.EstimatedArrival);
-      let diffMins = Math.round((((timeOfNextBus - localTime) % 86400000) % 3600000) / 60000);
-
-      let tempD = distance(currentCheckStop.lat, currentCheckStop.lng, pointStop.lat, pointStop.lng, "K")
-
-      if(tempD<d && diffMins<fixedMins){
-          route.push(currentCheckStop)
-      }
-      if(currentCheckStop.code == code){
-        toBreak = true;
-        break;
-      }
+  let i = checkBusStopArray(busRoutes, code);
+  let oneRoute = busRoutes[i];
+  let toBreak = false;
+  route = [];
+  for(let x = 0; i<oneRoute.length-1; x++){
+    let currentCheckStop = await getOneBusStop(oneRoute[x]);
+    if (currentCheckStop == null){
+      break;
     }
-    if(toBreak){
+    let nextB = await getBusFromStop(currentCheckStop.code, bus)
+    let timeOfNextBus = new Date(nextB.NextBus.EstimatedArrival);
+    let diffMins = Math.round((((timeOfNextBus - localTime) % 86400000) % 3600000) / 60000);
+
+    let tempD = distance(currentCheckStop.lat, currentCheckStop.lng, pointStop.lat, pointStop.lng, "K")
+
+    if(tempD<d && diffMins<fixedMins){
+        route.push(currentCheckStop)
+    }
+    if(currentCheckStop.code == code){
+      toBreak = true;
       break;
     }
   }
+  if(toBreak){
+    break;
+  }
+  
 
   let returnObj = {
     currentCode: pointStop,
