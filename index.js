@@ -236,27 +236,26 @@ app.get("/api/getBusRoute", async (req, res, next) => {
   let fixedMins = Math.round((((new Date(busLocations.NextBus.EstimatedArrival) - localTime) % 86400000) % 3600000) / 60000);
 
   let i = checkBusStopArray(busRoutes, code);
-  console.log(i)
   let oneRoute = busRoutes[i];
-  let toBreak = false;
   route = [];
   for(let x = 0; i<oneRoute.length-1; x++){
+    if(oneRoute[x] == code){
+      break;
+    }
     let currentCheckStop = await getOneBusStop(oneRoute[x]);
     if (currentCheckStop == null){
       break;
     }
     let nextB = await getBusFromStop(currentCheckStop.code, bus)
-    let timeOfNextBus = new Date(nextB.NextBus.EstimatedArrival);
-    let diffMins = Math.round((((timeOfNextBus - localTime) % 86400000) % 3600000) / 60000);
+    if(nextB != null){
+      let timeOfNextBus = new Date(nextB.NextBus.EstimatedArrival);
+      let diffMins = Math.round((((timeOfNextBus - localTime) % 86400000) % 3600000) / 60000);
 
-    let tempD = distance(currentCheckStop.lat, currentCheckStop.lng, pointStop.lat, pointStop.lng, "K")
+      let tempD = distance(currentCheckStop.lat, currentCheckStop.lng, pointStop.lat, pointStop.lng, "K")
 
-    if(tempD<d && diffMins<fixedMins){
-        route.push(currentCheckStop)
-    }
-    if(currentCheckStop.code == code){
-      toBreak = true;
-      break;
+      if(tempD<d && diffMins<fixedMins){
+          route.push(currentCheckStop)
+      }
     }
   }
 
