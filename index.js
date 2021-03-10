@@ -1,15 +1,16 @@
 require('dotenv').config();
 
+var fs = require('fs');
 var express = require("express");
 var app = express();
 
 const PORT = process.env.PORT;
 const URL = process.env.URL;
 const ltaDataMallKey = process.env.LTA_DATAMALL_KEY
-const allBusStopURL = process.env.ALL_BUS_STOP_URL
+let allBusStop = null;
+let allBusRoute = null;
 
 const request = require("request");
-
 
 function arePointsNear(checkPoint, centerPoint, km) {
     var ky = 40000 / 360
@@ -83,14 +84,34 @@ function httpGet(theUrl) {
       resolve("");
     }
 }
+function readFile(fileName){
+  return new Promise(function (resolve, reject) {
+    fs.readFile(fileName, 'utf8', function (err,data) {
+      if (err) {
+        resolve(err);
+      }
+      resolve(data);
+    });
+  });
+}
+
 
 function getAllBusStop() {
     return new Promise(function (resolve, reject) {
-        let resultString = httpGet(allBusStopURL)
+        let resultString = readFile('./stops.json')
         resultString.then(function (result) {
-            resolve(result)
+            resolve(JSON.parse(result))
         })
     })
+}
+
+function getAllBusRoute() {
+  return new Promise(function (resolve, reject) {
+      let resultString = readFile('./serviceStops.json')
+      resultString.then(function (result) {
+          resolve(JSON.parse(result))
+      })
+  })
 }
 
 async function asyncForEach(array, callback) {
@@ -105,7 +126,6 @@ async function getAllStopNearby(sentLat, sentLng){
       lng: sentLng,
     };
     output = [];
-    let allBusStop = await getAllBusStop()
     await asyncForEach(allBusStop, async (value, key) => {          
         let checkedPoint = {
             lat: value.lat,
@@ -126,8 +146,37 @@ async function getAllStopNearby(sentLat, sentLng){
     return output;
 }
 
-app.listen(PORT, () => {
+
+async function getOneBusStop(code){
+  let temp = null;
+  await asyncForEach(allBusStop, async (value, key) => {   
+    if(key == code){
+      temp = {
+        code: key,
+        lat: value.lat,
+        lng: value.lng,
+        name: value.name,
+      }   
+    }       
+  })
+  return temp;
+}
+
+async function getBusFromStop(code, busNo){
+  let busServices = await getBus(code)
+  let temp = null;
+  busServices.forEach(function (element) {
+    if (element.ServiceNo == busNo) {
+      temp = element
+    }
+  })
+  return temp;
+}
+
+app.listen(PORT, async() => {
     console.log(`Server running on port ${PORT}`);
+    allBusStop = await getAllBusStop();
+    allBusRoute = await getAllBusRoute();
 });
 
 
@@ -151,6 +200,47 @@ app.get("/api/getBus", async (req, res, next) => {
     })
     res.send(busServices)
 });
+
+app.get("/api/getBusRoute", async (req, res, next) => {
+  var code = req.param('code')
+  var bus = req.param('bus')
+  let route = []
+  let pointStop = await getOneBusStop(code);
+  let busRoutes = allBusRoute[bus];
+  let busLocations = await getBusFromStop(code, bus);
+  let d = distance(pointStop.lat, pointStop.lng, busLocations.NextBus.Latitude, busLocations.NextBus.Longitude, "K")
+  for(let i = 0; i<busRoutes.length; i++){
+    let oneRoute = busRoutes[i];
+    let toBreak = false;
+    route = [];
+    for(let x = 0; i<oneRoute.length-1; x++){
+      let currentCheckStop = await getOneBusStop(oneRoute[x]);
+      if (currentCheckStop == null){
+        break;
+      }
+      let tempD = distance(currentCheckStop.lat, currentCheckStop.lng, busLocations.NextBus.Latitude, busLocations.NextBus.Longitude, "K")
+      if(tempD<d){
+        route.push(currentCheckStop)
+      }
+      if(currentCheckStop.code == code){
+        toBreak = true;
+        break;
+      }
+    }
+    if(toBreak){
+      break;
+    }
+  }
+
+  let returnObj = {
+    currentCode: pointStop,
+    busLocations: busLocations,
+    route: route,
+  }
+
+  res.send(returnObj)
+});
+
 
 app.get('/', (req, res) => {
     try{
