@@ -235,7 +235,7 @@ app.get("/api/getBusRoute", async (req, res, next) => {
   let returnObj = {
     currentCode: pointStop,
     busLocations: busLocations,
-    route: route,
+    routeTaken: route,
   }
 
   res.send(returnObj)
