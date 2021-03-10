@@ -228,8 +228,6 @@ app.get("/api/getBusRoute", async (req, res, next) => {
       let diffMins = Math.round((((timeOfNextBus - localTime) % 86400000) % 3600000) / 60000);
 
       let tempD = distance(currentCheckStop.lat, currentCheckStop.lng, pointStop.lat, pointStop.lng, "K")
-      console.log(diffMins)
-      console.log(fixedMins)
 
       if(tempD<d && diffMins<fixedMins){
           route.push(currentCheckStop)
