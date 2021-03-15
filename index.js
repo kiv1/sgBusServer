@@ -114,11 +114,13 @@ function getAllBusRoute() {
   })
 }
 
-function checkBusStopArray(busRoutes, code) {
+async function checkBusStopArray(busRoutes, code) {
   var index = 0;
+  var temp = [];
   for(let i = 0; i<busRoutes.length; i++){
     let oneRoute = busRoutes[i];
     let toBreak = false;
+    temp = [];
     for(let x = 0; i<oneRoute.length; x++){
       if (oneRoute[x] == null){
         break;
@@ -126,13 +128,17 @@ function checkBusStopArray(busRoutes, code) {
       if(oneRoute[x] == code){
         break;
       }
+      await 
+      
+      temp.push(await getOneBusStop(oneRoute[x]))
     }
     if(toBreak){
       index = i;
       break;
     }
   }
-  return index;
+  temp.reverse();
+  return temp;
 }
 
 async function asyncForEach(array, callback) {
@@ -222,47 +228,50 @@ app.get("/api/getBus", async (req, res, next) => {
     res.send(busServices)
 });
 
+function isBetween(start, end, point) {
+  return Math.abs((end.lat - start.lat) * (point.lng - start.lng) - (end.lng - start.lng) * (point.lat - start.lat)) < 0.000001;
+}
+
 app.get("/api/getBusRoute", async (req, res, next) => {
   var code = req.param('code')
   var bus = req.param('bus')
   let route = []
   let pointStop = await getOneBusStop(code);
-  let busRoutes = allBusRoute[bus];
   let busLocations = await getBusFromStop(code, bus);
+
+
+  let busRoutes = allBusRoute[bus];
   let d = distance(pointStop.lat, pointStop.lng, busLocations.NextBus.Latitude, busLocations.NextBus.Longitude, "K")
 
-  let nd = new Date();
-  let localTime = nd.getTime();
-  let fixedMins = Math.round((((new Date(busLocations.NextBus.EstimatedArrival) - localTime) % 86400000) % 3600000) / 60000);
+  let busPoint = {
+    lat: busLocations.NextBus.Latitude,
+    lng: busLocations.NextBus.Longitude
+  }
 
-  let i = checkBusStopArray(busRoutes, code);
-  let oneRoute = busRoutes[i];
+  let oneRoute = await checkBusStopArray(busRoutes, code);
   route = [];
-  for(let x = 0; i<oneRoute.length-1; x++){
-    if(oneRoute[x] == code){
-      break;
-    }
-    let currentCheckStop = await getOneBusStop(oneRoute[x]);
-    if (currentCheckStop == null){
-      break;
-    }
-    let nextB = await getBusFromStop(currentCheckStop.code, bus)
-    if(nextB != null){
-      let timeOfNextBus = new Date(nextB.NextBus.EstimatedArrival);
-      let diffMins = Math.round((((timeOfNextBus - localTime) % 86400000) % 3600000) / 60000);
+  closestStation = null;
 
-      let tempD = distance(currentCheckStop.lat, currentCheckStop.lng, pointStop.lat, pointStop.lng, "K")
-
-      if(tempD<d && diffMins<fixedMins){
-          route.push(currentCheckStop)
-      }
+  for(let x = 0; x<(oneRoute.length-1); x++){
+    if(isBetween(oneRoute[x], oneRoute[x+1], busPoint)){
+      closestStation = oneRoute[x+1];
     }
   }
+
+  for(let index = 0; index<(oneRoute.length); index++){
+    route.push(oneRoute[index])
+    if(closestStation.code == oneRoute[index].code){
+      break;
+    }
+  }
+
+  route.reverse();
+  console.log(route)
 
   let returnObj = {
     currentCode: pointStop,
     busLocations: busLocations,
-    routeTaken: route,
+    routeTaken: route
   }
 
   res.send(returnObj)
