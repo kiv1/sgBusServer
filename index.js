@@ -228,10 +228,6 @@ app.get("/api/getBus", async (req, res, next) => {
     res.send(busServices)
 });
 
-function isBetween(start, end, point) {
-  return Math.abs((end.lat - start.lat) * (point.lng - start.lng) - (end.lng - start.lng) * (point.lat - start.lat)) < 0.000001;
-}
-
 app.get("/api/getBusRoute", async (req, res, next) => {
   var code = req.param('code')
   var bus = req.param('bus')
@@ -241,7 +237,7 @@ app.get("/api/getBusRoute", async (req, res, next) => {
 
 
   let busRoutes = allBusRoute[bus];
-  let d = distance(pointStop.lat, pointStop.lng, busLocations.NextBus.Latitude, busLocations.NextBus.Longitude, "K")
+  //let d = distance(pointStop.lat, pointStop.lng, busLocations.NextBus.Latitude, busLocations.NextBus.Longitude, "K")
 
   let busPoint = {
     lat: busLocations.NextBus.Latitude,
@@ -250,11 +246,14 @@ app.get("/api/getBusRoute", async (req, res, next) => {
 
   let oneRoute = await checkBusStopArray(busRoutes, code);
   route = [];
-  closestStation = null;
-
-  for(let x = 0; x<(oneRoute.length-1); x++){
-    if(isBetween(oneRoute[x], oneRoute[x+1], busPoint)){
-      closestStation = oneRoute[x+1];
+  closestStation = oneRoute[0];
+  let minD = distance(oneRoute[0].lat, oneRoute[0].lng, busLocations.NextBus.Latitude, busLocations.NextBus.Longitude, "K")
+  for(let x = 1; x<(oneRoute.length); x++){
+    let d = distance(oneRoute[x].lat, oneRoute[x].lng, busLocations.NextBus.Latitude, busLocations.NextBus.Longitude, "K")
+    if (minD > d){
+      closestStation = oneRoute[x]
+    }else{
+      break;
     }
   }
 
@@ -266,7 +265,6 @@ app.get("/api/getBusRoute", async (req, res, next) => {
   }
 
   route.reverse();
-  console.log(route)
 
   let returnObj = {
     currentCode: pointStop,
